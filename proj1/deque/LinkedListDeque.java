@@ -2,7 +2,6 @@ package deque;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 
 /**
  * @author Qin.JiaHao
@@ -127,16 +126,22 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
-        Iterator<T> e1 = iterator();
-        Iterator<?> e2 = obj.iterator();
-
-        while (e1.hasNext()) {
-            T o1 = e1.next();
-            Object o2 = e2.next();
-            if (!Objects.equals(o1, o2)) {
+        for (int i = 0; i < size; i++) {
+            if (get(i) != obj.get(i)) {
                 return false;
             }
         }
+
+//        Iterator<T> e1 = iterator();
+//        Iterator<?> e2 = obj.iterator();
+//
+//        while (e1.hasNext()) {
+//            T o1 = e1.next();
+//            Object o2 = e2.next();
+//            if (!Objects.equals(o1, o2)) {
+//                return false;
+//            }
+//        }
 
         return true;
     }

@@ -8,6 +8,22 @@ import static org.junit.Assert.*;
 public class LinkedListDequeTest {
 
     @Test
+    public void equalsTest() {
+        LinkedListDeque<String> lld1 = new LinkedListDeque<String>();
+        ArrayDeque<String> lld2 = new ArrayDeque<String>();
+        lld1.addLast("1");
+        lld1.addLast("2");
+        lld1.addLast("3");
+
+        lld2.addLast("1");
+        lld2.addLast("2");
+        lld2.addLast("3");
+
+        boolean res = lld1.equals(lld2);
+        assertTrue("Test equals", res);
+    }
+
+    @Test
     /** Adds a few things to the list, checking isEmpty() and size() are correct,
      * finally printing the results.
      *
