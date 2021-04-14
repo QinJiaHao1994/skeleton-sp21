@@ -24,7 +24,8 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         int newNextLast = newNextFirst + size + 1;
 
         int length = items.length;
-        for (int i = 0, srcPos = nextFirst + 1, destPos = newNextFirst + 1; i < size; i += 1, srcPos += 1, destPos += 1) {
+        for (int i = 0, srcPos = nextFirst + 1, destPos = newNextFirst + 1;
+             i < size; i += 1, srcPos += 1, destPos += 1) {
             newItems[destPos] = items[srcPos % length];
         }
 
@@ -70,12 +71,11 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
 
     @Override
     public void printDeque() {
-        System.out.println(toString());
+        System.out.println(getString());
         System.out.println();
     }
 
-    @Override
-    public String toString() {
+    private String getString() {
         StringBuilder sb = new StringBuilder();
 
         for (T o: this) {
@@ -136,11 +136,11 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
-        if (!(o instanceof ArrayDeque)) {
+        if (!(o instanceof Deque)) {
             return false;
         }
 
-        ArrayDeque<?> obj = (ArrayDeque<?>) o;
+        Deque<?> obj = (Deque<?>) o;
 
         if (obj.size() != size) {
             return false;
@@ -158,15 +158,6 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         }
 
         return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        for (T e : this) {
-            hashCode = 31 * hashCode + (e == null ? 0 : e.hashCode());
-        }
-        return hashCode;
     }
 
     private class DequeIterator implements Iterator<T> {

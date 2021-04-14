@@ -4,7 +4,7 @@ package deque;
  * @author Qin.JiaHao
  * @create 2021-04-14 2:59 下午
  */
-public interface Deque<T> {
+public interface Deque<T> extends Iterable<T> {
     void addFirst(T item);
 
     void addLast(T item);

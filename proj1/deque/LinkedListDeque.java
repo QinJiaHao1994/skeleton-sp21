@@ -36,12 +36,11 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
 
     @Override
     public void printDeque() {
-        System.out.println(toString());
+        System.out.println(getString());
         System.out.println();
     }
 
-    @Override
-    public String toString() {
+    private String getString() {
         StringBuilder sb = new StringBuilder();
 
         for (T o: this) {
@@ -59,8 +58,9 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
             return null;
         }
 
+        T first = sentinel.next.remove();
         size -= 1;
-        return sentinel.next.remove();
+        return first;
     }
 
     @Override
@@ -69,8 +69,9 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
             return null;
         }
 
+        T last = sentinel.prev.remove();
         size -= 1;
-        return sentinel.prev.remove();
+        return last;
     }
 
     @Override
@@ -116,11 +117,11 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
-        if (!(o instanceof LinkedListDeque)) {
+        if (!(o instanceof Deque)) {
             return false;
         }
 
-        LinkedListDeque<?> obj = (LinkedListDeque<?>) o;
+        Deque<?> obj = (Deque<?>) o;
 
         if (obj.size() != size) {
             return false;
@@ -138,15 +139,6 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
         }
 
         return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        for (T e : this) {
-            hashCode = 31 * hashCode + (e == null ? 0 : e.hashCode());
-        }
-        return hashCode;
     }
 
     private class DequeIterator implements Iterator<T> {
