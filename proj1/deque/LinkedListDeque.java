@@ -8,7 +8,7 @@ import java.util.Objects;
  * @author Qin.JiaHao
  * @create 2021-04-13 2:59 下午
  */
-public class LinkedListDeque<T> implements Iterable<T> {
+public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
     private Node sentinel;
     private int size;
 
@@ -17,24 +17,24 @@ public class LinkedListDeque<T> implements Iterable<T> {
         size = 0;
     }
 
+    @Override
     public void addFirst(T item) {
         new Node(item, sentinel, sentinel.next);
         size += 1;
     }
 
+    @Override
     public void addLast(T item) {
         new Node(item, sentinel.prev, sentinel);
         size += 1;
     }
 
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
+    @Override
     public int size() {
         return size;
     }
 
+    @Override
     public void printDeque() {
         System.out.println(toString());
         System.out.println();
@@ -53,6 +53,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
         return sb.toString();
     }
 
+    @Override
     public T removeFirst() {
         if (size == 0) {
             return null;
@@ -62,6 +63,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
         return sentinel.next.remove();
     }
 
+    @Override
     public T removeLast() {
         if (size == 0) {
             return null;
@@ -71,6 +73,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
         return sentinel.prev.remove();
     }
 
+    @Override
     public T get(int index) {
         if (index >= size || index < 0) {
             return null;
@@ -94,7 +97,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
         return getRecursiveHelper(sentinel.next, index);
     }
 
-    public T getRecursiveHelper(Node curr, int index) {
+    private T getRecursiveHelper(Node curr, int index) {
         if (index == 0) {
             return curr.item;
         }
