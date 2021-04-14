@@ -146,7 +146,7 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         }
 
         for (int i = 0; i < size; i++) {
-            if (get(i) != obj.get(i)) {
+            if (!get(i).equals(obj.get(i))) {
                 return false;
             }
         }
