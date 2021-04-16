@@ -49,10 +49,7 @@ public class CapersRepository {
     public static void writeStory(String text) {
         try {
             File story = join(System.getProperty("user.dir"), ".capers", "story");
-
-            if (!story.exists()) {
-                story.createNewFile();
-            }
+            story.createNewFile();
 
             StringBuilder buffer = new StringBuilder();
             buffer.append(readContentsAsString(story));
