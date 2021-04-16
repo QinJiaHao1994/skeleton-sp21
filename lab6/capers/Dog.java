@@ -59,9 +59,11 @@ public class Dog implements Serializable {
     public void saveDog() {
         try {
             File f = join(System.getProperty("user.dir"), ".capers", "dogs", name);
-            f.createNewFile();
-            writeObject(f, this);
+            if(!f.exists()){
+                f.createNewFile();
+            }
 
+            writeObject(f, this);
         } catch (IOException e) {
             e.printStackTrace();
         }
