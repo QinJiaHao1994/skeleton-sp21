@@ -20,7 +20,8 @@ public class CapersRepository {
     static final File CWD = new File(System.getProperty("user.dir"));
 
     /** Main metadata folder. */
-    static final File CAPERS_FOLDER = join(System.getProperty("user.dir"), ".capers");
+    static final File CAPERS_FOLDER = join(CWD, ".capers");
+    static final File STORY = join(CAPERS_FOLDER, "story");
 
     /**
      * Does required filesystem operations to allow for persistence.
@@ -39,6 +40,12 @@ public class CapersRepository {
         if (!Dog.DOG_FOLDER.exists()) {
             Dog.DOG_FOLDER.mkdir();
         }
+
+        try {
+            STORY.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -47,21 +54,14 @@ public class CapersRepository {
      * @param text String of the text to be appended to the story
      */
     public static void writeStory(String text) {
-        try {
-            File story = join(System.getProperty("user.dir"), ".capers", "story");
-            story.createNewFile();
+        StringBuilder buffer = new StringBuilder();
+        buffer.append(readContentsAsString(STORY));
+        buffer.append(text);
+        buffer.append("\n");
 
-            StringBuilder buffer = new StringBuilder();
-            buffer.append(readContentsAsString(story));
-            buffer.append(text);
-            buffer.append("\n");
-
-            String contents = buffer.toString();
-            writeContents(story, contents);
-            System.out.println(contents);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String contents = buffer.toString();
+        writeContents(STORY, contents);
+        System.out.println(contents);
     }
 
     /**
