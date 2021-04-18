@@ -1,7 +1,12 @@
 package gitlet;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.nio.file.Path;
+
 import static gitlet.Utils.*;
+import static gitlet.Utils.join;
 
 // TODO: any imports you need here
 
@@ -25,5 +30,52 @@ public class Repository {
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
 
-    /* TODO: fill in the rest of this class. */
+    /**
+     * Creates a new Gitlet version-control system in the current directory.
+     * */
+    public static void init() {
+        if(inRepo()) {
+            exitWithError("A Gitlet version-control system already exists in the current directory.");
+        }
+
+        setup();
+
+        Commit initCommit = new Commit();
+        initCommit.save();
+
+        Head head = Head.getInstance();
+        head.advance(initCommit.getHash());
+    }
+
+    public static void add(String path) {
+        if(!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+
+        Commit currCommit = Commit.getCommit();
+        
+        File file = getFileFromPath(path);
+        String hash = sha1(file);
+    }
+
+    private static void setup() {
+        //create HEAD
+        Head.initHead();
+
+        //create objects
+        File objects = join(GITLET_DIR, "objects");
+        objects.mkdir();
+    }
+
+    private static boolean inRepo() {
+        return GITLET_DIR.exists();
+    }
+
+    private static File getFileFromPath(String path) {
+        File file = new File(CWD, path);
+        if(!file.exists()) {
+            exitWithError("File does not exist.");
+        }
+        return file;
+    }
 }
