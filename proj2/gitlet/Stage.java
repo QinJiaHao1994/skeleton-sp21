@@ -38,8 +38,8 @@ public class Stage implements Serializable {
     private TreeSet<String> removal;
 
     private Stage() {
-        staged = new TreeMap();
-        removal = new TreeSet();
+        staged = new TreeMap<>();
+        removal = new TreeSet<>();
     }
 
     public Boolean isEmpty() {
@@ -73,6 +73,9 @@ public class Stage implements Serializable {
         }else {
             removeFromStaged(blob);
         }
+
+        System.out.println(staged.size());
+        System.out.println(removal.size());
 
         save();
     }

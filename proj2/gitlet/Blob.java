@@ -1,6 +1,8 @@
 package gitlet;
 
 import java.io.File;
+import java.io.Serializable;
+
 import static gitlet.Utils.*;
 import static gitlet.Repository.OBJECT_DIR;
 
@@ -8,7 +10,7 @@ import static gitlet.Repository.OBJECT_DIR;
  * @author Jiahao Qin
  * @create 2021-04-18 12:09 下午
  */
-public class Blob implements Comparable<Blob>{
+public class Blob implements Comparable<Blob>, Serializable {
 
     public static Boolean isSameFile(Blob a, Blob b) {
         if(a == null || b == null) {

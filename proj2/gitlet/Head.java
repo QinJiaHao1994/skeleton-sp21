@@ -1,10 +1,10 @@
 package gitlet;
 
 import java.io.File;
-import java.io.IOException;
 
 import static gitlet.Utils.*;
 import static gitlet.Repository.GITLET_DIR;
+import static gitlet.Repository.HEAD_DIR;
 
 /**
  * @author Qin.JiaHao
@@ -20,28 +20,6 @@ public class Head {
         return instance;
     }
 
-    /** Creates HEAD file and fill in "ref: refs/heads/master" */
-    public static void initHead() {
-        try {
-            //create refs
-            File heads = join(GITLET_DIR, "refs", "heads");
-            heads.mkdirs();
-
-            File master = join(heads, "master");
-            master.createNewFile();
-
-            String content = "ref: refs/heads/master";
-            File head = join(GITLET_DIR, "HEAD");
-            head.createNewFile();
-            writeContents(head, content);
-
-            instance = new Head(head, master);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private File head;
     private File pointer;
     private String branch;
 
@@ -52,7 +30,7 @@ public class Head {
 
     /** save new branch pointer to HEAD. */
     public void save(String branch) {
-        writeContents(head, "ref: refs/heads/" + branch);
+        writeContents(HEAD_DIR, "ref: refs/heads/" + branch);
     }
 
     public File getPointer() {
@@ -63,14 +41,8 @@ public class Head {
         return branch;
     }
 
-    private Head(File head, File pointer) {
-        this.head = head;
-        this.pointer = pointer;
-    }
-
     private Head() {
-        head = join(GITLET_DIR, "HEAD");
-        String content = readContentsAsString(head);
+        String content = readContentsAsString(HEAD_DIR);
         parse(content);
     }
 

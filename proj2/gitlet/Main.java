@@ -34,6 +34,12 @@ public class Main {
                 validateNumArgs("add", args, 2);
                 Repository.commit(args[1]);
                 break;
+            case "log":
+                Repository.log();
+                break;
+            case "global-log":
+                Repository.globalLog();
+                break;
             default:
                 exitWithError("No command with that name exists.");
         }
