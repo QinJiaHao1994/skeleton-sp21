@@ -20,9 +20,7 @@ public class Head {
         return instance;
     }
 
-    /**
-     * Creates HEAD file and fill in "ref: refs/heads/master"
-     * */
+    /** Creates HEAD file and fill in "ref: refs/heads/master" */
     public static void initHead() {
         try {
             //create refs
@@ -45,19 +43,24 @@ public class Head {
 
     private File head;
     private File pointer;
+    private String branch;
 
     /** get pointer of HEAD, then advances the pointer. */
-    public void advance(String hash) {
+    public void advancePointer(String hash) {
         writeContents(pointer, hash);
     }
 
-    /** save new branch pointer to HEAD*/
+    /** save new branch pointer to HEAD. */
     public void save(String branch) {
         writeContents(head, "ref: refs/heads/" + branch);
     }
 
     public File getPointer() {
         return pointer;
+    }
+
+    public String getBranch() {
+        return branch;
     }
 
     private Head(File head, File pointer) {
@@ -75,6 +78,7 @@ public class Head {
     private void parse(String content) {
         String path = content.substring(5);
         String[] paths = path.split("/");
+        branch = paths[paths.length - 1];
         pointer = join(GITLET_DIR, paths);
     }
 }

@@ -1,9 +1,6 @@
 package gitlet;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.nio.file.Path;
 
 import static gitlet.Utils.*;
 import static gitlet.Utils.join;
@@ -29,6 +26,8 @@ public class Repository {
     public static final File CWD = new File(System.getProperty("user.dir"));
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
+    /** The objects directory. */
+    public static final File OBJECT_DIR = join(GITLET_DIR, "objects");
 
     /**
      * Creates a new Gitlet version-control system in the current directory.
@@ -39,23 +38,37 @@ public class Repository {
         }
 
         setup();
-
-        Commit initCommit = new Commit();
-        initCommit.save();
-
-        Head head = Head.getInstance();
-        head.advance(initCommit.getHash());
+        Commit.init();
     }
 
-    public static void add(String path) {
+    public static void commit(String messgae) {
         if(!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
-        Commit currCommit = Commit.getCommit();
-        
-        File file = getFileFromPath(path);
-        String hash = sha1(file);
+        if(messgae.length() == 0) {
+            exitWithError("Please enter a commit message.");
+        }
+
+        Commit.getCurrentCommit().addCommit(messgae);
+    }
+
+    public static void add(String name) {
+        if(!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+
+        File file = getFile(name);
+        Blob blob = new Blob(name, file);
+        Stage.getInstance().add(blob);
+    }
+
+    public static void rm(String name) {
+        if(!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+        File file = new File(CWD, name);
+        Stage.getInstance().rm(name, file);
     }
 
     private static void setup() {
@@ -71,8 +84,8 @@ public class Repository {
         return GITLET_DIR.exists();
     }
 
-    private static File getFileFromPath(String path) {
-        File file = new File(CWD, path);
+    private static File getFile(String name) {
+        File file = new File(CWD, name);
         if(!file.exists()) {
             exitWithError("File does not exist.");
         }

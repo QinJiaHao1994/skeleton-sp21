@@ -26,6 +26,14 @@ public class Main {
                 validateNumArgs("add", args, 2);
                 Repository.add(args[1]);
                 break;
+            case "rm":
+                validateNumArgs("add", args, 2);
+                Repository.rm(args[1]);
+                break;
+            case "commit":
+                validateNumArgs("add", args, 2);
+                Repository.commit(args[1]);
+                break;
             default:
                 exitWithError("No command with that name exists.");
         }

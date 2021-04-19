@@ -11,6 +11,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import static java.nio.file.StandardOpenOption.APPEND;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -123,6 +124,30 @@ class Utils {
             }
             BufferedOutputStream str =
                 new BufferedOutputStream(Files.newOutputStream(file.toPath()));
+            for (Object obj : contents) {
+                if (obj instanceof byte[]) {
+                    str.write((byte[]) obj);
+                } else {
+                    str.write(((String) obj).getBytes(StandardCharsets.UTF_8));
+                }
+            }
+            str.close();
+        } catch (IOException | ClassCastException excp) {
+            throw new IllegalArgumentException(excp.getMessage());
+        }
+    }
+
+    /** Append the result of concatenating the bytes in CONTENTS to FILE.
+     *  Each object in CONTENTS may be either a String or a byte array.
+     *  Throws IllegalArgumentException in case of problems. */
+    static void appendContents(File file, Object... contents) {
+        try {
+            if (file.isDirectory()) {
+                throw
+                        new IllegalArgumentException("cannot overwrite directory");
+            }
+            BufferedOutputStream str =
+                    new BufferedOutputStream(Files.newOutputStream(file.toPath(), APPEND));
             for (Object obj : contents) {
                 if (obj instanceof byte[]) {
                     str.write((byte[]) obj);
