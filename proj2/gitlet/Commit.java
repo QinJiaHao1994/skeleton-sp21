@@ -6,6 +6,8 @@ import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeMap;
 
 import static gitlet.Repository.*;
@@ -42,10 +44,55 @@ public class Commit implements Serializable {
     }
 
     public static Commit getCommitFromHash(String hash) {
-        File object = join(OBJECT_DIR, "commits", hash);
+        String prefix = hash.substring(0, 2);
+        File object = join(OBJECT_DIR, "commits", prefix, hash.substring(2));
         Commit commit = readObject(object, Commit.class);
         commit.setHash(hash);
         return commit;
+    }
+
+    public static Commit getCommitFromHashPrefix(String commitId) {
+        int length = commitId.length();
+        if (length < 4) {
+            return null;
+        }
+
+        String prefix = commitId.substring(0, 2);
+        File prefixDir = join(OBJECT_DIR, "commits", prefix);
+
+        if (!prefixDir.exists()) {
+            return null;
+        }
+
+        List<String> results = new LinkedList<>();
+
+        for(String hashFragment : plainFilenamesIn(prefixDir)) {
+            if(hashFragment.startsWith(commitId.substring(2))) {
+                results.add(hashFragment);
+            }
+        }
+
+        if(results.size() != 1) {
+            return null;
+        }
+
+        File object = join(prefixDir, results.get(0));
+        Commit commit = readObject(object, Commit.class);
+
+        return commit;
+    }
+
+        public static List<String> getAllCommitHashes() {
+        File commits = join(OBJECT_DIR, "commits");
+        List<String> hashes = new LinkedList<>();
+        for(String prefix: commits.list()) {
+            File prefixDir = join(commits, prefix);
+            for(String hashFragment : plainFilenamesIn(prefixDir)) {
+                hashes.add(prefix + hashFragment);
+            }
+        }
+
+        return hashes;
     }
 
     private transient String hash;
@@ -99,7 +146,10 @@ public class Commit implements Serializable {
     private void save() {
         try {
             setHash(sha1(serialize(this)));
-            File object = join(OBJECT_DIR, "commits", hash);
+            String prefix = hash.substring(0, 2);
+            File prefixDir = join(OBJECT_DIR, "commits", prefix);
+            prefixDir.mkdir();
+            File object = join(prefixDir, hash.substring(2));
             object.createNewFile();
             writeObject(object, this);
 

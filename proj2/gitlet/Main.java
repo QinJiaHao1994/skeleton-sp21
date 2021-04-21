@@ -47,6 +47,17 @@ public class Main {
             case "status":
                 Repository.status();
                 break;
+            case "checkout":
+                if (length == 2) {
+                    Repository.checkoutBranch(args[1]);
+                } else if (length == 3 && args[1].equals("--")) {
+                    Repository.checkout(args[2]);
+                } else if (length == 4 && args[2].equals("--")) {
+                    Repository.checkout(args[1], args[3]);
+                } else {
+                    exitWithError("No command with that name exists.");
+                }
+                break;
             default:
                 exitWithError("No command with that name exists.");
         }

@@ -52,17 +52,16 @@ public class Repository {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
-        File file = getFile(name);
-        Blob blob = new Blob(name, file);
-        Stage.getInstance().add(blob);
+
+        Stage.getInstance().add(name);
     }
 
     public static void rm(String name) {
         if(!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
-        File file = new File(CWD, name);
-        Stage.getInstance().rm(name, file);
+
+        Stage.getInstance().rm(name);
     }
 
     public static void log() {
@@ -77,9 +76,9 @@ public class Repository {
         if(!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
-        File commits = join(OBJECT_DIR, "commits");
-        List<String> hashs = plainFilenamesIn(commits);
-        for (String hash: hashs) {
+
+        List<String> hashes = Commit.getAllCommitHashes();
+        for (String hash: hashes) {
             Commit.getCommitFromHash(hash).log();
             System.out.println();
         }
@@ -89,12 +88,11 @@ public class Repository {
         if(!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
-        File commits = join(OBJECT_DIR, "commits");
-        List<String> hashs = plainFilenamesIn(commits);
 
+        List<String> hashes = Commit.getAllCommitHashes();
         Commit commit;
         Boolean notFind = true;
-        for (String hash: hashs) {
+        for (String hash: hashes) {
             commit = Commit.getCommitFromHash(hash);
             if(commit.getMessage().equals(message)) {
                 notFind = false;
@@ -113,9 +111,7 @@ public class Repository {
         }
 
         System.out.println("=== Branches ===");
-        List<String> branchesList = plainFilenamesIn(REF_DIR);
-        String[] branches = branchesList.toArray(new String[0]);
-        Arrays.sort(branches);
+        List<String> branches = plainFilenamesIn(REF_DIR);
         for (String branch: branches) {
             if(branch.equals(Head.getInstance().getBranch())) {
                 System.out.println("*" + branch);
@@ -186,6 +182,46 @@ public class Repository {
         System.out.println("=== Untracked Files ===");
         printIterable(untrackedFiles);
         System.out.println();
+    }
+
+    public static void checkoutBranch(String branchName) {
+        if(!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+    }
+
+    public static void checkout(String filename) {
+        if (!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+
+        Commit commit = Commit.getCurrentCommit();
+        checkoutHelper(commit, filename);
+    }
+
+    public static void checkout(String commitId, String filename) {
+        if(!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+
+        Commit commit = Commit.getCommitFromHashPrefix(commitId);
+        if(commit == null) {
+            exitWithError("No commit with that id exists");
+        }
+
+        checkoutHelper(commit, filename);
+    }
+
+    private static void checkoutHelper(Commit commit, String filename) {
+        TreeMap<String, Blob> blobs = commit.getBlobs();
+        if (!blobs.containsKey(filename)) {
+            exitWithError("File does not exist in that commit.");
+        }
+
+        Blob blob = blobs.get(filename);
+        blob.fillContent();
+        blob.copyToWorkingDir();
+//        Stage.getInstance().remove(filename);
     }
 
     private static <T> void reverseArray(T[] arr) {

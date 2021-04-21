@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static gitlet.Repository.CWD;
 import static gitlet.Repository.GITLET_DIR;
 import static gitlet.Utils.*;
 import static gitlet.Utils.join;
@@ -58,60 +59,60 @@ public class Stage implements Serializable {
         writeObject(stage, this);
     }
 
-    public void add(Blob blob) {
-        String name = blob.getName();
+    public void add(String name) {
+        File file = new File(CWD, name);
+        if(!file.exists()) {
+            exitWithError("File does not exist.");
+        }
+
+        Blob blob = new Blob(name, file);
         Commit commit = Commit.getCurrentCommit();
         TreeMap<String, Blob> blobs = commit.getBlobs();
 
-        if (removal.contains(name)) {
-            return;
-        }
-
         Boolean tracked = blobs.containsKey(name);
-        if (!tracked || Blob.isNotSameFile(blobs.get(name), blob)) {
-            diffAndReplace(blob);
+        if (!tracked || Blob.isNotSame(blobs.get(name), blob)) {
+            putToStaged(blob);
         }else {
-            removeFromStaged(blob);
+            staged.remove(name);
         }
 
+        removal.remove(name);
         save();
     }
 
-    public void rm(String name, File file) {
+    public void rm(String name) {
+        File file = new File(CWD, name);
         Commit commit = Commit.getCurrentCommit();
         TreeMap<String, Blob> blobs = commit.getBlobs();
 
         Boolean isStaged = staged.containsKey(name);
         Boolean isTracked = blobs.containsKey(name);
 
-        if(isStaged) {
+        if (isStaged) {
             staged.remove(name);
         }
 
-        if(isTracked) {
+        if (isTracked) {
             removal.add(name);
-            if(file.exists()) {
+            if (file.exists()) {
                 file.delete();
             }
         }
 
-        if(!isStaged && !isTracked) {
+        if (!isStaged && !isTracked) {
             exitWithError("No reason to remove the file.");
         }
     }
 
-    private void removeFromStaged(Blob blob) {
-        String name = blob.getName();
-        if (staged.containsKey(name)) {
-            staged.remove(name);
-        }
+    public void remove(String name) {
+        staged.remove(name);
+        removal.remove(name);
     }
 
-
-    private void diffAndReplace(Blob blob) {
+    private void putToStaged(Blob blob) {
         String name = blob.getName();
 
-        if(staged.containsKey(name) && Blob.isSameFile(staged.get(name), blob)) {
+        if (staged.containsKey(name) && Blob.isSame(staged.get(name), blob)) {
             return;
         }
 
