@@ -188,6 +188,18 @@ public class Repository {
         if(!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
+
+        List<String> branches = plainFilenamesIn(REF_DIR);
+        if(!branches.contains(branchName)) {
+            exitWithError("No such branch exists.");
+        }
+
+        if(branchName.equals(Head.getInstance().getBranch())) {
+            exitWithError("No need to checkout the current branch.");
+        }
+
+
+
     }
 
     public static void checkout(String filename) {

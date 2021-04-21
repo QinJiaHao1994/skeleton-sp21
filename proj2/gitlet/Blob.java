@@ -7,6 +7,7 @@ import java.io.Serializable;
 import static gitlet.Repository.CWD;
 import static gitlet.Utils.*;
 import static gitlet.Repository.OBJECT_DIR;
+import static gitlet.Utils.readContents;
 
 /**
  * @author Jiahao Qin
@@ -32,7 +33,7 @@ public class Blob implements Comparable<Blob>, Serializable {
 
     public Blob(String name, File content) {
         this.name = name;
-        this.hash = sha1(serialize(content));
+        this.hash = sha1(serialize(readContents(content)));
         this.content = content;
     }
 
@@ -68,7 +69,7 @@ public class Blob implements Comparable<Blob>, Serializable {
     }
 
     public Boolean isSameContent(File file) {
-        return getHash().equals(sha1(serialize(file)));
+        return getHash().equals(sha1(serialize(readContents(file))));
     }
 
     @Override
