@@ -47,8 +47,12 @@ public class Blob implements Comparable<Blob>, Serializable {
     }
 
     public void save() {
-        File object = join(OBJECT_DIR, hash);
+        File object = join(OBJECT_DIR, "blobs", hash);
         writeContents(object, readContents(content));
+    }
+
+    public Boolean isSameContent(File file) {
+        return getHash().equals(sha1(serialize(file)));
     }
 
     @Override

@@ -40,6 +40,13 @@ public class Main {
             case "global-log":
                 Repository.globalLog();
                 break;
+            case "find":
+                validateNumArgs("add", args, 2);
+                Repository.find(args[1]);
+                break;
+            case "status":
+                Repository.status();
+                break;
             default:
                 exitWithError("No command with that name exists.");
         }

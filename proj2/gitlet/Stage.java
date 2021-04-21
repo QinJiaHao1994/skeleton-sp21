@@ -74,9 +74,6 @@ public class Stage implements Serializable {
             removeFromStaged(blob);
         }
 
-        System.out.println(staged.size());
-        System.out.println(removal.size());
-
         save();
     }
 

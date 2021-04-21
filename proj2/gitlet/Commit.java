@@ -3,13 +3,9 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.text.Format;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.TreeMap;
 
 import static gitlet.Repository.*;
@@ -35,9 +31,7 @@ public class Commit implements Serializable {
         if (currentCommit == null) {
             File pointer = Head.getInstance().getPointer();
             String hash = readContentsAsString(pointer);
-            File object = join(OBJECT_DIR, hash);
-            currentCommit = readObject(object, Commit.class);
-            currentCommit.setHash(hash);
+            currentCommit = getCommitFromHash(hash);
         }
         return currentCommit;
     }
@@ -47,8 +41,14 @@ public class Commit implements Serializable {
         commit.save();
     }
 
+    public static Commit getCommitFromHash(String hash) {
+        File object = join(OBJECT_DIR, "commits", hash);
+        Commit commit = readObject(object, Commit.class);
+        commit.setHash(hash);
+        return commit;
+    }
+
     private transient String hash;
-    private transient Commit[] parents;
     private String message;
     private String timestamp;
     private ArrayList<String> parentIds;
@@ -99,16 +99,19 @@ public class Commit implements Serializable {
     private void save() {
         try {
             setHash(sha1(serialize(this)));
-            File object = join(OBJECT_DIR, hash);
+            File object = join(OBJECT_DIR, "commits", hash);
             object.createNewFile();
             writeObject(object, this);
 
             advancePointer();
-            addToLogs();
             Stage.initStage();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public String getMessage() {
+        return message;
     }
 
     public void setHash(String hash) {
@@ -127,29 +130,27 @@ public class Commit implements Serializable {
         Head.getInstance().advancePointer(hash);
     }
 
-    private void addToLogs() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("===");
-        sb.append("\n");
-        sb.append("commit ");
-        sb.append(hash);
-        sb.append("\n");
-        if(parentIds.size() > 1) {
-            sb.append("Merge:");
-            for (String id: parentIds) {
-                sb.append(" ");
-                sb.append(id.substring(0,7));
-            }
-            sb.append("\n");
-        }
-        sb.append("Date: ");
-        sb.append(timestamp);
-        sb.append("\n");
-        sb.append(message);
-        sb.append("\n");
-        sb.append("\n");
+    public void recursiveLog() {
+        log();
 
-        File log = join(LOG_DIR, Head.getInstance().getBranch());
-        appendContents(log, sb.toString());
+        if(parentIds.size() != 0) {
+            System.out.println();
+            Commit parentCommit = getCommitFromHash(parentIds.get(0));
+            parentCommit.recursiveLog();
+        }
+    }
+
+    public void log() {
+        System.out.println("===");
+        System.out.println("commit " + hash);
+        if(parentIds.size() > 1) {
+            System.out.print("Merge:");
+            for (String id: parentIds) {
+                System.out.print(" " + id.substring(0,7));
+            }
+            System.out.println();
+        }
+        System.out.println("Date: " + timestamp);
+        System.out.println(message);
     }
 }
