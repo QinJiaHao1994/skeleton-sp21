@@ -27,7 +27,7 @@ public class Repository {
      * Creates a new Gitlet version-control system in the current directory.
      * */
     public static void init() {
-        if(inRepo()) {
+        if (inRepo()) {
             exitWithError("A Gitlet version-control system already exists in the current directory.");
         }
 
@@ -36,11 +36,11 @@ public class Repository {
     }
 
     public static void commit(String messgae) {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
-        if(messgae.length() == 0) {
+        if (messgae.length() == 0) {
             exitWithError("Please enter a commit message.");
         }
 
@@ -48,7 +48,7 @@ public class Repository {
     }
 
     public static void add(String name) {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
@@ -57,7 +57,7 @@ public class Repository {
     }
 
     public static void rm(String name) {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
@@ -65,7 +65,7 @@ public class Repository {
     }
 
     public static void log() {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
         Commit commit = Commit.getCurrentCommit();
@@ -94,13 +94,13 @@ public class Repository {
         Boolean notFind = true;
         for (String hash: hashes) {
             commit = Commit.getCommitFromHash(hash);
-            if(commit.getMessage().equals(message)) {
+            if (commit.getMessage().equals(message)) {
                 notFind = false;
                 System.out.println(hash);
             }
         }
 
-        if(notFind) {
+        if (notFind) {
             exitWithError("Found no commit with that message.");
         }
     }
@@ -113,7 +113,7 @@ public class Repository {
         System.out.println("=== Branches ===");
         List<String> branches = plainFilenamesIn(REF_DIR);
         for (String branch: branches) {
-            if(branch.equals(Head.getInstance().getBranch())) {
+            if (branch.equals(Head.getInstance().getBranch())) {
                 System.out.println("*" + branch);
             }else {
                 System.out.println(branch);
@@ -185,21 +185,24 @@ public class Repository {
     }
 
     public static void checkoutBranch(String branchName) {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
         List<String> branches = plainFilenamesIn(REF_DIR);
-        if(!branches.contains(branchName)) {
+        if (!branches.contains(branchName)) {
             exitWithError("No such branch exists.");
         }
 
-        if(branchName.equals(Head.getInstance().getBranch())) {
+        if (branchName.equals(Head.getInstance().getBranch())) {
             exitWithError("No need to checkout the current branch.");
         }
 
-
-
+        File branch = join(REF_DIR, branchName);
+        String hash = readContentsAsString(branch);
+        Commit commit = Commit.getCommitFromHash(hash);
+        checkoutByCommit(commit);
+        Head.save(branchName);
     }
 
     public static void checkout(String filename) {
@@ -208,23 +211,64 @@ public class Repository {
         }
 
         Commit commit = Commit.getCurrentCommit();
-        checkoutHelper(commit, filename);
+        checkoutFile(commit, filename);
     }
 
     public static void checkout(String commitId, String filename) {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
         Commit commit = Commit.getCommitFromHashPrefix(commitId);
-        if(commit == null) {
+        if (commit == null) {
             exitWithError("No commit with that id exists");
         }
 
-        checkoutHelper(commit, filename);
+        checkoutFile(commit, filename);
     }
 
-    private static void checkoutHelper(Commit commit, String filename) {
+    public static void branch(String branchName) {
+        File branch = join(REF_DIR, branchName);
+        if (branch.exists()) {
+            exitWithError("A branch with that name already exists.");
+        }
+
+        try {
+            branch.createNewFile();
+            writeContents(branch, Commit.getCurrentCommit().getHash());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void rmBranch(String branchName) {
+        File branch = join(REF_DIR, branchName);
+        if(branch.exists()) {
+            exitWithError("A branch with that name does not exist.");
+        }
+
+        if (branchName.equals(Head.getInstance().getBranch())) {
+            exitWithError("Cannot remove the current branch.");
+        }
+
+        branch.delete();
+    }
+
+    public static void reset(String commitId) {
+        Commit commit = Commit.getCommitFromHashPrefix(commitId);
+        if (commit == null) {
+            exitWithError("No commit with that id exists");
+        }
+
+        checkoutByCommit(commit);
+        writeContents(Head.getInstance().getPointer(), commit.getHash());
+    }
+
+    public static void merge(String branchName) {
+
+    }
+
+    private static void checkoutFile(Commit commit, String filename) {
         TreeMap<String, Blob> blobs = commit.getBlobs();
         if (!blobs.containsKey(filename)) {
             exitWithError("File does not exist in that commit.");
@@ -233,7 +277,25 @@ public class Repository {
         Blob blob = blobs.get(filename);
         blob.fillContent();
         blob.copyToWorkingDir();
-//        Stage.getInstance().remove(filename);
+    }
+
+    private static void checkoutByCommit(Commit commit) {
+        verifyUntrackedWillBeOverwritten(commit);
+
+        TreeMap<String, Blob> currentBlobs = Commit.getCurrentCommit().getBlobs();
+        TreeMap<String, Blob> checkoutBlobs = commit.getBlobs();
+
+        for (Blob blob: checkoutBlobs.values()) {
+            blob.fillContent();
+            blob.copyToWorkingDir();
+            currentBlobs.remove(blob.getName());
+        }
+
+        for(String filename: currentBlobs.keySet()) {
+            join(CWD, filename).delete();
+        }
+
+        Stage.initStage();
     }
 
     private static <T> void reverseArray(T[] arr) {
@@ -286,6 +348,18 @@ public class Repository {
     private static <E> void printIterable(Iterable<E> items) {
         for (E item: items) {
             System.out.println(item.toString());
+        }
+    }
+
+    private static void verifyUntrackedWillBeOverwritten(Commit commit) {
+        TreeMap<String, Blob> currentBlobs = Commit.getCurrentCommit().getBlobs();
+        TreeMap<String, Blob> checkoutBlobs = commit.getBlobs();
+        List<String> filenames = plainFilenamesIn(CWD);
+
+        for (String filename: filenames) {
+            if(!currentBlobs.containsKey(filename) && checkoutBlobs.containsKey(filename)) {
+                exitWithError("There is an untracked file in the way; delete it, or add and commit it first.");
+            }
         }
     }
 }

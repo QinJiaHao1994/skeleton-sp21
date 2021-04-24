@@ -45,10 +45,6 @@ public class Blob implements Comparable<Blob>, Serializable {
         return hash;
     }
 
-    public void delete() {
-
-    }
-
     public void fillContent() {
         content = join(OBJECT_DIR, "blobs", hash);
     }

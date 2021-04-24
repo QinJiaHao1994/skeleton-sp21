@@ -23,15 +23,15 @@ public class Main {
                 Repository.init();
                 break;
             case "add":
-                validateNumArgs("add", args, 2);
+                validateNumArgs(args, 2);
                 Repository.add(args[1]);
                 break;
             case "rm":
-                validateNumArgs("add", args, 2);
+                validateNumArgs(args, 2);
                 Repository.rm(args[1]);
                 break;
             case "commit":
-                validateNumArgs("add", args, 2);
+                validateNumArgs(args, 2);
                 Repository.commit(args[1]);
                 break;
             case "log":
@@ -41,7 +41,7 @@ public class Main {
                 Repository.globalLog();
                 break;
             case "find":
-                validateNumArgs("add", args, 2);
+                validateNumArgs(args, 2);
                 Repository.find(args[1]);
                 break;
             case "status":
@@ -55,8 +55,24 @@ public class Main {
                 } else if (length == 4 && args[2].equals("--")) {
                     Repository.checkout(args[1], args[3]);
                 } else {
-                    exitWithError("No command with that name exists.");
+                    exitWithError("Incorrect operands.");
                 }
+                break;
+            case "branch":
+                validateNumArgs(args, 2);
+                Repository.branch(args[1]);
+                break;
+            case "rm-branch":
+                validateNumArgs(args, 2);
+                Repository.rmBranch(args[1]);
+                break;
+            case "reset":
+                validateNumArgs(args, 2);
+                Repository.reset(args[1]);
+                break;
+            case "merge":
+                validateNumArgs(args, 2);
+                Repository.merge(args[1]);
                 break;
             default:
                 exitWithError("No command with that name exists.");
@@ -67,11 +83,10 @@ public class Main {
      * Checks the number of arguments versus the expected number,
      * throws a RuntimeException if they do not match.
      *
-     * @param cmd Name of command you are validating
      * @param args Argument array from command line
      * @param n Number of expected arguments
      */
-    public static void validateNumArgs(String cmd, String[] args, int n) {
+    public static void validateNumArgs(String[] args, int n) {
         if (args.length != n) {
             exitWithError("Incorrect operands.");
         }

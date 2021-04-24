@@ -20,17 +20,18 @@ public class Head {
         return instance;
     }
 
+    /** save new branch pointer to HEAD. */
+    public static void save(String branch) {
+        writeContents(HEAD_DIR, "ref: refs/heads/" + branch);
+        instance = null;
+    }
+
     private File pointer;
     private String branch;
 
     /** get pointer of HEAD, then advances the pointer. */
     public void advancePointer(String hash) {
         writeContents(pointer, hash);
-    }
-
-    /** save new branch pointer to HEAD. */
-    public void save(String branch) {
-        writeContents(HEAD_DIR, "ref: refs/heads/" + branch);
     }
 
     public File getPointer() {

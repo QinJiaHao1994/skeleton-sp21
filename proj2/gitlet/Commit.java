@@ -82,7 +82,7 @@ public class Commit implements Serializable {
         return commit;
     }
 
-        public static List<String> getAllCommitHashes() {
+    public static List<String> getAllCommitHashes() {
         File commits = join(OBJECT_DIR, "commits");
         List<String> hashes = new LinkedList<>();
         for(String prefix: commits.list()) {
@@ -143,23 +143,6 @@ public class Commit implements Serializable {
 
     }
 
-    private void save() {
-        try {
-            setHash(sha1(serialize(this)));
-            String prefix = hash.substring(0, 2);
-            File prefixDir = join(OBJECT_DIR, "commits", prefix);
-            prefixDir.mkdir();
-            File object = join(prefixDir, hash.substring(2));
-            object.createNewFile();
-            writeObject(object, this);
-
-            advancePointer();
-            Stage.initStage();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public String getMessage() {
         return message;
     }
@@ -174,10 +157,6 @@ public class Commit implements Serializable {
 
     public TreeMap<String, Blob> getBlobs() {
         return blobs;
-    }
-
-    private void advancePointer() {
-        Head.getInstance().advancePointer(hash);
     }
 
     public void recursiveLog() {
@@ -202,5 +181,26 @@ public class Commit implements Serializable {
         }
         System.out.println("Date: " + timestamp);
         System.out.println(message);
+    }
+
+    private void advancePointer() {
+        Head.getInstance().advancePointer(hash);
+    }
+
+    private void save() {
+        try {
+            setHash(sha1(serialize(this)));
+            String prefix = hash.substring(0, 2);
+            File prefixDir = join(OBJECT_DIR, "commits", prefix);
+            prefixDir.mkdir();
+            File object = join(prefixDir, hash.substring(2));
+            object.createNewFile();
+            writeObject(object, this);
+
+            advancePointer();
+            Stage.initStage();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
