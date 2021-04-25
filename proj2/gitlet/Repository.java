@@ -6,11 +6,10 @@ import java.util.*;
 
 import static gitlet.Utils.*;
 
-/** Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
- *
- *  @author TODO
+/**
+ * Represents a gitlet repository.
+ * Handle all commands at a high level.
+ * @author Jiahao Qin
  */
 public class Repository {
     /** The current working directory. */
@@ -111,12 +110,12 @@ public class Repository {
         }
 
         System.out.println("=== Branches ===");
-        List<String> branches = plainFilenamesIn(REF_DIR);
-        for (String branch: branches) {
-            if (branch.equals(Head.getInstance().getBranch())) {
-                System.out.println("*" + branch);
+        List<String> branchNames = plainFilenamesIn(REF_DIR);
+        for (String branchName: branchNames) {
+            if (branchName.equals(Head.getInstance().getBranchName())) {
+                System.out.println("*" + branchName);
             }else {
-                System.out.println(branch);
+                System.out.println(branchName);
             }
         }
         System.out.println();
@@ -189,18 +188,16 @@ public class Repository {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
-        List<String> branches = plainFilenamesIn(REF_DIR);
-        if (!branches.contains(branchName)) {
+        File branch = join(REF_DIR, branchName);
+        if(!branch.exists()) {
             exitWithError("No such branch exists.");
         }
 
-        if (branchName.equals(Head.getInstance().getBranch())) {
+        if (branchName.equals(Head.getInstance().getBranchName())) {
             exitWithError("No need to checkout the current branch.");
         }
 
-        File branch = join(REF_DIR, branchName);
-        String hash = readContentsAsString(branch);
-        Commit commit = Commit.getCommitFromHash(hash);
+        Commit commit = Commit.getCommitFromBranch(branch);
         checkoutByCommit(commit);
         Head.save(branchName);
     }
@@ -228,6 +225,10 @@ public class Repository {
     }
 
     public static void branch(String branchName) {
+        if (!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+
         File branch = join(REF_DIR, branchName);
         if (branch.exists()) {
             exitWithError("A branch with that name already exists.");
@@ -242,12 +243,16 @@ public class Repository {
     }
 
     public static void rmBranch(String branchName) {
+        if (!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+
         File branch = join(REF_DIR, branchName);
-        if(branch.exists()) {
+        if(!branch.exists()) {
             exitWithError("A branch with that name does not exist.");
         }
 
-        if (branchName.equals(Head.getInstance().getBranch())) {
+        if (branchName.equals(Head.getInstance().getBranchName())) {
             exitWithError("Cannot remove the current branch.");
         }
 
@@ -255,17 +260,164 @@ public class Repository {
     }
 
     public static void reset(String commitId) {
+        if (!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
+
         Commit commit = Commit.getCommitFromHashPrefix(commitId);
         if (commit == null) {
             exitWithError("No commit with that id exists");
         }
 
         checkoutByCommit(commit);
-        writeContents(Head.getInstance().getPointer(), commit.getHash());
+        writeContents(Head.getInstance().getBranch(), commit.getHash());
     }
 
     public static void merge(String branchName) {
+        if (!inRepo()) {
+            exitWithError("Not in an initialized Gitlet directory.");
+        }
 
+        if(!Stage.getInstance().isEmpty()) {
+            exitWithError("You have uncommitted changes.");
+        }
+
+        File branch = join(REF_DIR, branchName);
+        if(!branch.exists()) {
+            exitWithError("A branch with that name does not exist.");
+        }
+
+        String currentBranchName = Head.getInstance().getBranchName();
+        if (branchName.equals(currentBranchName)) {
+            exitWithError("Cannot merge a branch with itself.");
+        }
+
+
+        Commit mergeCommit = Commit.getCommitFromBranch(branch);
+        mergeCommit.setBranchName(branchName);
+        verifyUntrackedWillBeOverwritten(mergeCommit);
+
+        Commit currentCommit = Commit.getCurrentCommit();
+        currentCommit.setBranchName(currentBranchName);
+
+        mergeHelper(currentCommit, mergeCommit);
+    }
+
+    private static void mergeHelper(Commit currentCommit, Commit mergeCommit) {
+        Commit splitPoint = Commit.findSplitPoint(currentCommit, mergeCommit);
+        if(Commit.isSame(splitPoint, mergeCommit)) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            return;
+        }
+
+        if(Commit.isSame(splitPoint, currentCommit)) {
+            Repository.checkoutBranch(mergeCommit.getBranchName());
+            System.out.println("Current branch fast-forwarded.");
+            return;
+        }
+
+        Boolean hasConflicts = false;
+        TreeMap<String, Blob> splitBlobs = splitPoint.getBlobs();
+        TreeMap<String, Blob> headBlobs = currentCommit.getBlobs();
+        TreeMap<String, Blob> otherBlobs = mergeCommit.getBlobs();
+        Stage stage = Stage.getInstance();
+
+        for (String filename: splitBlobs.keySet()) {
+            Boolean inHead = headBlobs.containsKey(filename);
+            Boolean inOther = otherBlobs.containsKey(filename);
+            Blob splitBlob = splitBlobs.get(filename);
+
+            if(inHead && inOther) {
+                Blob headBlob = headBlobs.get(filename);
+                Blob otherBlob = otherBlobs.get(filename);
+                Boolean modifiedInHead = Blob.isNotSame(headBlob, splitBlob);
+                Boolean modifiedInOther = Blob.isNotSame(otherBlob, splitBlob);
+                Boolean modifiedInDiffWays =  Blob.isNotSame(headBlob, otherBlob);
+
+                //case 1
+                if (modifiedInOther && !modifiedInHead) {
+                    otherBlob.copyToWorkingDir();
+                    stage.addToStaged(otherBlob);
+                }else if (modifiedInHead && modifiedInOther && modifiedInDiffWays) {
+                    //case 8
+                    hasConflicts = true;
+                    conflictHelper(filename, headBlob.getContent(), otherBlob.getContent());
+                }
+            }
+
+            if(inHead && !inOther) {
+                Blob headBlob = headBlobs.get(filename);
+                Boolean modifiedInHead = Blob.isNotSame(headBlob, splitBlob);
+
+                //case 8
+                if(modifiedInHead) {
+                    hasConflicts = true;
+                    conflictHelper(filename, headBlob.getContent(), null);
+                }else {
+                    //case 6
+                    stage.addToRemoval(filename);
+                }
+            }
+
+            if(inOther && !inHead) {
+                Blob otherBlob = otherBlobs.get(filename);
+                Boolean modifiedInOther = Blob.isNotSame(otherBlob, splitBlob);
+
+                //case 8
+                if(modifiedInOther) {
+                    hasConflicts = true;
+                    conflictHelper(filename, null, otherBlob.getContent());
+                }
+            }
+
+            otherBlobs.remove(filename);
+        }
+
+        for (String filename: otherBlobs.keySet()) {
+            Blob otherBlob = otherBlobs.get(filename);
+            Blob headBlob = headBlobs.get(filename);
+            Boolean inHead = headBlobs.containsKey(filename);
+            // case 5
+            if(!inHead) {
+                otherBlob.copyToWorkingDir();
+                stage.addToStaged(otherBlob);
+            }else if (Blob.isNotSame(otherBlob, headBlob)) {
+                // case 8
+                hasConflicts = true;
+                conflictHelper(filename, headBlob.getContent(), otherBlob.getContent());
+            }
+        }
+
+        currentCommit.merge(mergeCommit);
+
+        if(hasConflicts) {
+            System.out.println("Encountered a merge conflict.");
+        }
+    }
+
+    private static void conflictHelper(String filename, File headFile, File otherFile) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<<<<<<< HEAD\n");
+        if(headFile != null) {
+            sb.append(readContentsAsString(headFile));
+        }
+        sb.append("=======\n");
+        if(otherFile != null) {
+            sb.append(readContentsAsString(otherFile));
+        }
+        sb.append(">>>>>>>\n");
+
+        try {
+            Stage stage = Stage.getInstance();
+            File file = join(CWD, filename);
+            file.createNewFile();
+            writeContents(file, sb.toString());
+            Blob blob = new Blob(filename, file);
+            blob.save();
+            stage.addToStaged(blob);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void checkoutFile(Commit commit, String filename) {
@@ -275,7 +427,6 @@ public class Repository {
         }
 
         Blob blob = blobs.get(filename);
-        blob.fillContent();
         blob.copyToWorkingDir();
     }
 
@@ -286,7 +437,6 @@ public class Repository {
         TreeMap<String, Blob> checkoutBlobs = commit.getBlobs();
 
         for (Blob blob: checkoutBlobs.values()) {
-            blob.fillContent();
             blob.copyToWorkingDir();
             currentBlobs.remove(blob.getName());
         }

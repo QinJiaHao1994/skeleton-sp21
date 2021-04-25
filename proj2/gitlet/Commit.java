@@ -5,42 +5,32 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 import static gitlet.Repository.*;
 import static gitlet.Utils.*;
 import static gitlet.Utils.join;
 
-/** Represents a gitlet commit object.
- *  Handle gitlet commands.
- *  does at a high level.
- *
- *  @author TODO
- */
 public class Commit implements Serializable {
-    /**
-     * List all instance variables of the Commit class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided one example for `message`.
-     */
 
     private static Commit currentCommit;
-
-    public static Commit getCurrentCommit() {
-        if (currentCommit == null) {
-            File pointer = Head.getInstance().getPointer();
-            String hash = readContentsAsString(pointer);
-            currentCommit = getCommitFromHash(hash);
-        }
-        return currentCommit;
-    }
 
     public static void init() {
         Commit commit = new Commit();
         commit.save();
+    }
+
+    public static Commit getCurrentCommit() {
+        if (currentCommit == null) {
+            File branch = Head.getInstance().getBranch();
+            currentCommit = getCommitFromBranch(branch);
+        }
+        return currentCommit;
+    }
+
+    public static Commit getCommitFromBranch(File branch) {
+        String hash = readContentsAsString(branch);
+        return getCommitFromHash(hash);
     }
 
     public static Commit getCommitFromHash(String hash) {
@@ -76,9 +66,10 @@ public class Commit implements Serializable {
             return null;
         }
 
-        File object = join(prefixDir, results.get(0));
+        String lastPath = results.get(0);
+        File object = join(prefixDir, lastPath);
         Commit commit = readObject(object, Commit.class);
-
+        commit.setHash(prefix + lastPath);
         return commit;
     }
 
@@ -95,20 +86,56 @@ public class Commit implements Serializable {
         return hashes;
     }
 
+    public static Boolean isSame(Commit p, Commit q) {
+        if (p == null || q == null) {
+            return false;
+        }
+
+        return p.hash.equals(q.hash);
+    }
+
+    public static Commit findSplitPoint(Commit currentCommit, Commit mergeCommit) {
+        Queue<Commit> queue = new LinkedList<>();
+        queue.add(currentCommit);
+        queue.add(mergeCommit);
+
+        HashMap<String, String> commitMap = new HashMap<>();
+
+        while (!queue.isEmpty()) {
+            Commit commit = queue.remove();
+            String hash = commit.getHash();
+            String branchName = commit.getBranchName();
+
+            if (commitMap.containsKey(hash) && !commitMap.get(hash).equals(branchName)) {
+                return commit;
+            }
+
+            if (!commitMap.containsKey(hash)) {
+                commitMap.put(hash, branchName);
+                for (Commit parent : commit.parents()) {
+                    queue.add(parent);
+                }
+            }
+        }
+
+        return null;
+    }
+
     private transient String hash;
+    private transient String branchName;
+    private TreeMap<String, Blob> blobs;
     private String message;
     private String timestamp;
-    private ArrayList<String> parentIds;
-    private TreeMap<String, Blob> blobs;
+    private List<String> parentIds;
 
-    public Commit() {
+    private Commit() {
         message = "initial commit";
         timestamp = "Wed Dec 31 16:00:00 1969 -0800";
         parentIds = new ArrayList<>();
         blobs = new TreeMap<>();
     }
 
-    public Commit(String message, ArrayList<String> parentIds, TreeMap<String, Blob> blobs) {
+    private Commit(String message, ArrayList<String> parentIds, TreeMap<String, Blob> blobs) {
         this.message = message;
         this.timestamp = ZonedDateTime.now().format(
                 DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy xxxx"));
@@ -116,35 +143,43 @@ public class Commit implements Serializable {
         this.blobs = blobs;
     }
 
+    public Commit[] parents() {
+        int length = parentIds.size();
+        Commit[] parents = new Commit[length];
+
+        for (int i = 0; i < length; i++) {
+            parents[i] = getCommitFromHash(parentIds.get(i));
+            parents[i].branchName = branchName;
+        }
+
+        return parents;
+    }
+
     /** Derives a new commit. */
     public void addCommit(String message) {
         ArrayList<String> parentIds = new ArrayList<>();
-        TreeMap<String, Blob> blobs = new TreeMap<>();
-
         parentIds.add(currentCommit.getHash());
-        blobs.putAll(currentCommit.getBlobs());
-
-        // merge files staged for addition or removal
-        Stage index = Stage.getInstance();
-        if (index.isEmpty()) {
-            exitWithError("No changes added to the commit.");
-        }
-
-        blobs.putAll(index.getStaged());
-        for (String name: index.getRemoval()) {
-            blobs.remove(name);
-        }
-
-        Commit commit = new Commit(message, parentIds, blobs);
-        commit.save();
+        commitHelper(message, parentIds);
     }
 
-    public void mergeCommit(Commit mergeCommit) {
-
+    public void merge(Commit mergeCommit) {
+        String message = "Merged " + mergeCommit.getBranchName() + " into " + currentCommit.getBranchName() + ".";
+        ArrayList<String> parentIds = new ArrayList<>();
+        parentIds.add(currentCommit.getHash());
+        parentIds.add(mergeCommit.getHash());
+        commitHelper(message, parentIds);
     }
 
     public String getMessage() {
         return message;
+    }
+
+    public void setBranchName(String branchName) {
+        this.branchName = branchName;
+    }
+
+    public String getBranchName() {
+        return branchName;
     }
 
     public void setHash(String hash) {
@@ -202,5 +237,25 @@ public class Commit implements Serializable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void commitHelper(String message, ArrayList<String> parentIds) {
+        TreeMap<String, Blob> blobs = new TreeMap<>();
+
+        blobs.putAll(currentCommit.getBlobs());
+
+        // merge files staged for addition or removal
+        Stage index = Stage.getInstance();
+        if (index.isEmpty()) {
+            exitWithError("No changes added to the commit.");
+        }
+
+        blobs.putAll(index.getStaged());
+        for (String name: index.getRemoval()) {
+            blobs.remove(name);
+        }
+
+        Commit commit = new Commit(message, parentIds, blobs);
+        commit.save();
     }
 }

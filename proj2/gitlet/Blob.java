@@ -5,9 +5,8 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import static gitlet.Repository.CWD;
-import static gitlet.Utils.*;
 import static gitlet.Repository.OBJECT_DIR;
-import static gitlet.Utils.readContents;
+import static gitlet.Utils.*;
 
 /**
  * @author Jiahao Qin
@@ -45,12 +44,16 @@ public class Blob implements Comparable<Blob>, Serializable {
         return hash;
     }
 
-    public void fillContent() {
-        content = join(OBJECT_DIR, "blobs", hash);
+    public File getContent() {
+        if(content == null) {
+            content = join(OBJECT_DIR, "blobs", hash);
+        }
+        return content;
     }
 
     public void copyToWorkingDir() {
         try {
+            content = join(OBJECT_DIR, "blobs", hash);
             File file = new File(CWD, name);
             file.createNewFile();
             writeContents(file, readContents(content));

@@ -7,7 +7,7 @@ import static gitlet.Repository.GITLET_DIR;
 import static gitlet.Repository.HEAD_DIR;
 
 /**
- * @author Qin.JiaHao
+ * @author Jiahao Qin
  * @create 2021-04-18 2:12 下午
  */
 public class Head {
@@ -26,20 +26,20 @@ public class Head {
         instance = null;
     }
 
-    private File pointer;
-    private String branch;
+    private File branch;
+    private String branchName;
 
     /** get pointer of HEAD, then advances the pointer. */
     public void advancePointer(String hash) {
-        writeContents(pointer, hash);
+        writeContents(branch, hash);
     }
 
-    public File getPointer() {
-        return pointer;
-    }
-
-    public String getBranch() {
+    public File getBranch() {
         return branch;
+    }
+
+    public String getBranchName() {
+        return branchName;
     }
 
     private Head() {
@@ -51,7 +51,7 @@ public class Head {
     private void parse(String content) {
         String path = content.substring(5);
         String[] paths = path.split("/");
-        branch = paths[paths.length - 1];
-        pointer = join(GITLET_DIR, paths);
+        branchName = paths[paths.length - 1];
+        branch = join(GITLET_DIR, paths);
     }
 }

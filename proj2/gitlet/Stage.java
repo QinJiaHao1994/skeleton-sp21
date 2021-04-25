@@ -6,13 +6,12 @@ import java.io.Serializable;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import static gitlet.Repository.CWD;
-import static gitlet.Repository.GITLET_DIR;
+import static gitlet.Repository.*;
 import static gitlet.Utils.*;
 import static gitlet.Utils.join;
 
 /**
- * @author Qin.JiaHao
+ * @author Jiahao Qin
  * @create 2021-04-18 3:51 下午
  */
 public class Stage implements Serializable {
@@ -71,7 +70,7 @@ public class Stage implements Serializable {
 
         Boolean tracked = blobs.containsKey(name);
         if (!tracked || Blob.isNotSame(blobs.get(name), blob)) {
-            putToStaged(blob);
+            diffAndStaged(blob);
         }else {
             staged.remove(name);
         }
@@ -94,9 +93,7 @@ public class Stage implements Serializable {
 
         if (isTracked) {
             removal.add(name);
-            if (file.exists()) {
-                file.delete();
-            }
+            file.delete();
         }
 
         if (!isStaged && !isTracked) {
@@ -104,12 +101,17 @@ public class Stage implements Serializable {
         }
     }
 
-    public void remove(String name) {
-        staged.remove(name);
-        removal.remove(name);
+    public void addToStaged(Blob blob) {
+        staged.put(blob.getName(), blob);
     }
 
-    private void putToStaged(Blob blob) {
+    public void addToRemoval(String key) {
+        File file = new File(CWD, key);
+        removal.add(key);
+        file.delete();
+    }
+
+    private void diffAndStaged(Blob blob) {
         String name = blob.getName();
 
         if (staged.containsKey(name) && Blob.isSame(staged.get(name), blob)) {
