@@ -15,7 +15,7 @@ import static gitlet.Utils.*;
 public class Blob implements Comparable<Blob>, Serializable {
 
     public static Boolean isSame(Blob a, Blob b) {
-        if(a == null || b == null) {
+        if (a == null || b == null) {
             return false;
         }
 
@@ -45,7 +45,7 @@ public class Blob implements Comparable<Blob>, Serializable {
     }
 
     public File getContent() {
-        if(content == null) {
+        if (content == null) {
             content = join(OBJECT_DIR, "blobs", hash);
         }
         return content;

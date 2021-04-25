@@ -14,7 +14,7 @@ public class Head {
     private static Head instance;
 
     public static synchronized Head getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new Head();
         }
         return instance;

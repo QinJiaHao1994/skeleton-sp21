@@ -27,7 +27,8 @@ public class Repository {
      * */
     public static void init() {
         if (inRepo()) {
-            exitWithError("A Gitlet version-control system already exists in the current directory.");
+            exitWithError("A Gitlet version-control system "
+                    + "already exists in the current directory.");
         }
 
         setup();
@@ -72,7 +73,7 @@ public class Repository {
     }
 
     public static void globalLog() {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
@@ -84,7 +85,7 @@ public class Repository {
     }
 
     public static void find(String message) {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
@@ -105,7 +106,7 @@ public class Repository {
     }
 
     public static void status() {
-        if(!inRepo()) {
+        if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
@@ -114,7 +115,7 @@ public class Repository {
         for (String branchName: branchNames) {
             if (branchName.equals(Head.getInstance().getBranchName())) {
                 System.out.println("*" + branchName);
-            }else {
+            } else {
                 System.out.println(branchName);
             }
         }
@@ -135,7 +136,7 @@ public class Repository {
         for (String stagedFilename: stagedFilenames) {
             if (!currentFilenames.contains(stagedFilename)) {
                 modifiedFiles.add(stagedFilename + " (deleted)");
-            }else if(!stagedFiles.get(stagedFilename).isSameContent(join(CWD, stagedFilename))) {
+            } else if (!stagedFiles.get(stagedFilename).isSameContent(join(CWD, stagedFilename))) {
                 modifiedFiles.add(stagedFilename + " (modified)");
             }
 
@@ -189,7 +190,7 @@ public class Repository {
         }
 
         File branch = join(REF_DIR, branchName);
-        if(!branch.exists()) {
+        if (!branch.exists()) {
             exitWithError("No such branch exists.");
         }
 
@@ -248,7 +249,7 @@ public class Repository {
         }
 
         File branch = join(REF_DIR, branchName);
-        if(!branch.exists()) {
+        if (!branch.exists()) {
             exitWithError("A branch with that name does not exist.");
         }
 
@@ -278,12 +279,12 @@ public class Repository {
             exitWithError("Not in an initialized Gitlet directory.");
         }
 
-        if(!Stage.getInstance().isEmpty()) {
+        if (!Stage.getInstance().isEmpty()) {
             exitWithError("You have uncommitted changes.");
         }
 
         File branch = join(REF_DIR, branchName);
-        if(!branch.exists()) {
+        if (!branch.exists()) {
             exitWithError("A branch with that name does not exist.");
         }
 
@@ -305,12 +306,11 @@ public class Repository {
 
     private static void mergeHelper(Commit currentCommit, Commit mergeCommit) {
         Commit splitPoint = Commit.findSplitPoint(currentCommit, mergeCommit);
-        if(Commit.isSame(splitPoint, mergeCommit)) {
+        if (Commit.isSame(splitPoint, mergeCommit)) {
             System.out.println("Given branch is an ancestor of the current branch.");
             return;
         }
-
-        if(Commit.isSame(splitPoint, currentCommit)) {
+        if (Commit.isSame(splitPoint, currentCommit)) {
             Repository.checkoutBranch(mergeCommit.getBranchName());
             System.out.println("Current branch fast-forwarded.");
             return;
@@ -327,44 +327,37 @@ public class Repository {
             Boolean inOther = otherBlobs.containsKey(filename);
             Blob splitBlob = splitBlobs.get(filename);
 
-            if(inHead && inOther) {
+            if (inHead && inOther) {
                 Blob headBlob = headBlobs.get(filename);
                 Blob otherBlob = otherBlobs.get(filename);
                 Boolean modifiedInHead = Blob.isNotSame(headBlob, splitBlob);
                 Boolean modifiedInOther = Blob.isNotSame(otherBlob, splitBlob);
                 Boolean modifiedInDiffWays =  Blob.isNotSame(headBlob, otherBlob);
 
-                //case 1
                 if (modifiedInOther && !modifiedInHead) {
                     otherBlob.copyToWorkingDir();
                     stage.addToStaged(otherBlob);
-                }else if (modifiedInHead && modifiedInOther && modifiedInDiffWays) {
-                    //case 8
+                } else if (modifiedInHead && modifiedInOther && modifiedInDiffWays) {
                     hasConflicts = true;
                     conflictHelper(filename, headBlob.getContent(), otherBlob.getContent());
                 }
             }
-
-            if(inHead && !inOther) {
+            if (inHead && !inOther) {
                 Blob headBlob = headBlobs.get(filename);
                 Boolean modifiedInHead = Blob.isNotSame(headBlob, splitBlob);
 
-                //case 8
-                if(modifiedInHead) {
+                if (modifiedInHead) {
                     hasConflicts = true;
                     conflictHelper(filename, headBlob.getContent(), null);
-                }else {
-                    //case 6
+                } else {
                     stage.addToRemoval(filename);
                 }
             }
-
-            if(inOther && !inHead) {
+            if (inOther && !inHead) {
                 Blob otherBlob = otherBlobs.get(filename);
                 Boolean modifiedInOther = Blob.isNotSame(otherBlob, splitBlob);
 
-                //case 8
-                if(modifiedInOther) {
+                if (modifiedInOther) {
                     hasConflicts = true;
                     conflictHelper(filename, null, otherBlob.getContent());
                 }
@@ -377,20 +370,17 @@ public class Repository {
             Blob otherBlob = otherBlobs.get(filename);
             Blob headBlob = headBlobs.get(filename);
             Boolean inHead = headBlobs.containsKey(filename);
-            // case 5
-            if(!inHead) {
+            if (!inHead) {
                 otherBlob.copyToWorkingDir();
                 stage.addToStaged(otherBlob);
-            }else if (Blob.isNotSame(otherBlob, headBlob)) {
-                // case 8
+            } else if (Blob.isNotSame(otherBlob, headBlob)) {
                 hasConflicts = true;
                 conflictHelper(filename, headBlob.getContent(), otherBlob.getContent());
             }
         }
 
         currentCommit.merge(mergeCommit);
-
-        if(hasConflicts) {
+        if (hasConflicts) {
             System.out.println("Encountered a merge conflict.");
         }
     }
@@ -398,11 +388,11 @@ public class Repository {
     private static void conflictHelper(String filename, File headFile, File otherFile) {
         StringBuilder sb = new StringBuilder();
         sb.append("<<<<<<< HEAD\n");
-        if(headFile != null) {
+        if (headFile != null) {
             sb.append(readContentsAsString(headFile));
         }
         sb.append("=======\n");
-        if(otherFile != null) {
+        if (otherFile != null) {
             sb.append(readContentsAsString(otherFile));
         }
         sb.append(">>>>>>>\n");
@@ -441,7 +431,7 @@ public class Repository {
             currentBlobs.remove(blob.getName());
         }
 
-        for(String filename: currentBlobs.keySet()) {
+        for (String filename: currentBlobs.keySet()) {
             join(CWD, filename).delete();
         }
 
@@ -449,14 +439,14 @@ public class Repository {
     }
 
     private static <T> void reverseArray(T[] arr) {
-        if(arr == null) {
+        if (arr == null) {
             return;
         }
 
         int length = arr.length;
         T temp;
 
-        for (int i = 0; i < length / 2; i ++) {
+        for (int i = 0; i < length / 2; i++) {
             temp = arr[i];
             arr[i] = arr[length - 1 - i];
             arr[length - 1 - i] = temp;
@@ -489,7 +479,7 @@ public class Repository {
 
     private static File getFile(String name) {
         File file = new File(CWD, name);
-        if(!file.exists()) {
+        if (!file.exists()) {
             exitWithError("File does not exist.");
         }
         return file;
@@ -507,8 +497,9 @@ public class Repository {
         List<String> filenames = plainFilenamesIn(CWD);
 
         for (String filename: filenames) {
-            if(!currentBlobs.containsKey(filename) && checkoutBlobs.containsKey(filename)) {
-                exitWithError("There is an untracked file in the way; delete it, or add and commit it first.");
+            if (!currentBlobs.containsKey(filename) && checkoutBlobs.containsKey(filename)) {
+                exitWithError("There is an untracked file in the way;"
+                        + " delete it, or add and commit it first.");
             }
         }
     }

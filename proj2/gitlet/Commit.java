@@ -7,6 +7,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+
 import static gitlet.Repository.*;
 import static gitlet.Utils.*;
 import static gitlet.Utils.join;
@@ -56,13 +57,13 @@ public class Commit implements Serializable {
 
         List<String> results = new LinkedList<>();
 
-        for(String hashFragment : plainFilenamesIn(prefixDir)) {
-            if(hashFragment.startsWith(commitId.substring(2))) {
+        for (String hashFragment : plainFilenamesIn(prefixDir)) {
+            if (hashFragment.startsWith(commitId.substring(2))) {
                 results.add(hashFragment);
             }
         }
 
-        if(results.size() != 1) {
+        if (results.size() != 1) {
             return null;
         }
 
@@ -76,9 +77,9 @@ public class Commit implements Serializable {
     public static List<String> getAllCommitHashes() {
         File commits = join(OBJECT_DIR, "commits");
         List<String> hashes = new LinkedList<>();
-        for(String prefix: commits.list()) {
+        for (String prefix: commits.list()) {
             File prefixDir = join(commits, prefix);
-            for(String hashFragment : plainFilenamesIn(prefixDir)) {
+            for (String hashFragment : plainFilenamesIn(prefixDir)) {
                 hashes.add(prefix + hashFragment);
             }
         }
@@ -94,10 +95,10 @@ public class Commit implements Serializable {
         return p.hash.equals(q.hash);
     }
 
-    public static Commit findSplitPoint(Commit currentCommit, Commit mergeCommit) {
+    public static Commit findSplitPoint(Commit headCommit, Commit otherCommit) {
         Queue<Commit> queue = new LinkedList<>();
-        queue.add(currentCommit);
-        queue.add(mergeCommit);
+        queue.add(headCommit);
+        queue.add(otherCommit);
 
         HashMap<String, String> commitMap = new HashMap<>();
 
@@ -156,18 +157,19 @@ public class Commit implements Serializable {
     }
 
     /** Derives a new commit. */
-    public void addCommit(String message) {
-        ArrayList<String> parentIds = new ArrayList<>();
+    public void addCommit(String msg) {
+        ArrayList<String> pIds = new ArrayList<>();
         parentIds.add(currentCommit.getHash());
-        commitHelper(message, parentIds);
+        commitHelper(msg, pIds);
     }
 
     public void merge(Commit mergeCommit) {
-        String message = "Merged " + mergeCommit.getBranchName() + " into " + currentCommit.getBranchName() + ".";
-        ArrayList<String> parentIds = new ArrayList<>();
-        parentIds.add(currentCommit.getHash());
-        parentIds.add(mergeCommit.getHash());
-        commitHelper(message, parentIds);
+        String msg = "Merged " + mergeCommit.getBranchName()
+                + " into " + currentCommit.getBranchName() + ".";
+        ArrayList<String> pIds = new ArrayList<>();
+        pIds.add(currentCommit.getHash());
+        pIds.add(mergeCommit.getHash());
+        commitHelper(msg, pIds);
     }
 
     public String getMessage() {
@@ -197,7 +199,7 @@ public class Commit implements Serializable {
     public void recursiveLog() {
         log();
 
-        if(parentIds.size() != 0) {
+        if (parentIds.size() != 0) {
             System.out.println();
             Commit parentCommit = getCommitFromHash(parentIds.get(0));
             parentCommit.recursiveLog();
@@ -207,10 +209,10 @@ public class Commit implements Serializable {
     public void log() {
         System.out.println("===");
         System.out.println("commit " + hash);
-        if(parentIds.size() > 1) {
+        if (parentIds.size() > 1) {
             System.out.print("Merge:");
             for (String id: parentIds) {
-                System.out.print(" " + id.substring(0,7));
+                System.out.print(" " + id.substring(0, 7));
             }
             System.out.println();
         }
@@ -239,10 +241,10 @@ public class Commit implements Serializable {
         }
     }
 
-    private void commitHelper(String message, ArrayList<String> parentIds) {
-        TreeMap<String, Blob> blobs = new TreeMap<>();
+    private void commitHelper(String msg, ArrayList<String> pIds) {
+        TreeMap<String, Blob> commitBlobs = new TreeMap<>();
 
-        blobs.putAll(currentCommit.getBlobs());
+        commitBlobs.putAll(currentCommit.getBlobs());
 
         // merge files staged for addition or removal
         Stage index = Stage.getInstance();
@@ -250,12 +252,12 @@ public class Commit implements Serializable {
             exitWithError("No changes added to the commit.");
         }
 
-        blobs.putAll(index.getStaged());
+        commitBlobs.putAll(index.getStaged());
         for (String name: index.getRemoval()) {
-            blobs.remove(name);
+            commitBlobs.remove(name);
         }
 
-        Commit commit = new Commit(message, parentIds, blobs);
+        Commit commit = new Commit(msg, pIds, commitBlobs);
         commit.save();
     }
 }

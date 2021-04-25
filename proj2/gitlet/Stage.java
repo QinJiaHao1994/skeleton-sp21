@@ -60,7 +60,7 @@ public class Stage implements Serializable {
 
     public void add(String name) {
         File file = new File(CWD, name);
-        if(!file.exists()) {
+        if (!file.exists()) {
             exitWithError("File does not exist.");
         }
 
@@ -71,7 +71,7 @@ public class Stage implements Serializable {
         Boolean tracked = blobs.containsKey(name);
         if (!tracked || Blob.isNotSame(blobs.get(name), blob)) {
             diffAndStaged(blob);
-        }else {
+        } else {
             staged.remove(name);
         }
 
