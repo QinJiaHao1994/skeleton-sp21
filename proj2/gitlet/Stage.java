@@ -87,6 +87,10 @@ public class Stage implements Serializable {
         Boolean isStaged = staged.containsKey(name);
         Boolean isTracked = blobs.containsKey(name);
 
+        if (!isStaged && !isTracked) {
+            exitWithError("No reason to remove the file.");
+        }
+
         if (isStaged) {
             staged.remove(name);
         }
@@ -96,9 +100,7 @@ public class Stage implements Serializable {
             file.delete();
         }
 
-        if (!isStaged && !isTracked) {
-            exitWithError("No reason to remove the file.");
-        }
+        save();
     }
 
     public void addToStaged(Blob blob) {
