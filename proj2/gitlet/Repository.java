@@ -156,9 +156,7 @@ public class Repository {
         for (String trackedFilename: trackedFilenames) {
             if (!currentFilenames.contains(trackedFilename)) {
                 modifiedFiles.add(trackedFilename + " (deleted)");
-            }
-
-            if (!trackedFiles.get(trackedFilename).isSameContent(join(CWD, trackedFilename))) {
+            } else if (!trackedFiles.get(trackedFilename).isSameContent(join(CWD, trackedFilename))) {
                 modifiedFiles.add(trackedFilename + " (modified)");
             }
 
