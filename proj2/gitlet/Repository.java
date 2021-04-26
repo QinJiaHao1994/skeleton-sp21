@@ -18,8 +18,9 @@ public class Repository {
     public static final File GITLET_DIR = join(CWD, ".gitlet");
     /** The objects directory. */
     public static final File OBJECT_DIR = join(GITLET_DIR, "objects");
-//    public static final File LOG_DIR = join(GITLET_DIR, "logs", "refs", "heads");
+    /** The references directory. */
     public static final File REF_DIR = join(GITLET_DIR, "refs", "heads");
+    /** The Head file. */
     public static final File HEAD_DIR = join(GITLET_DIR, "HEAD");
 
     /**
@@ -35,6 +36,10 @@ public class Repository {
         Commit.init();
     }
 
+    /**
+     * Create a commit in the current branch.
+     * @param messgae
+     */
     public static void commit(String messgae) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -47,6 +52,10 @@ public class Repository {
         Commit.getCurrentCommit().addCommit(messgae);
     }
 
+    /**
+     * Add a file to stage for addition.
+     * @param name
+     */
     public static void add(String name) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -56,6 +65,11 @@ public class Repository {
         Stage.getInstance().add(name);
     }
 
+    /**
+     * Add a file to stage for removal, then remove the file
+     * in working directory if the file is tracked by current commit.
+     * @param name
+     */
     public static void rm(String name) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -64,6 +78,9 @@ public class Repository {
         Stage.getInstance().rm(name);
     }
 
+    /**
+     * Display information about each commit in current branch.
+     */
     public static void log() {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -72,6 +89,9 @@ public class Repository {
         commit.recursiveLog();
     }
 
+    /**
+     * Display information about all the commits.
+     */
     public static void globalLog() {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -84,6 +104,10 @@ public class Repository {
         }
     }
 
+    /**
+     * Prints out the ids of all commits that have the given commit message.
+     * @param message
+     */
     public static void find(String message) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -105,6 +129,10 @@ public class Repository {
         }
     }
 
+    /**
+     * Displays what branches currently exist, and marks the current branch with a *.
+     * Also displays what files have been staged for addition or removal.
+     */
     public static void status() {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -154,9 +182,10 @@ public class Repository {
         }
 
         for (String trackedFilename: trackedFilenames) {
+            Blob trackedFile = trackedFiles.get(trackedFilename);
             if (!currentFilenames.contains(trackedFilename)) {
                 modifiedFiles.add(trackedFilename + " (deleted)");
-            } else if (!trackedFiles.get(trackedFilename).isSameContent(join(CWD, trackedFilename))) {
+            } else if (!trackedFile.isSameContent(join(CWD, trackedFilename))) {
                 modifiedFiles.add(trackedFilename + " (modified)");
             }
 
@@ -182,6 +211,10 @@ public class Repository {
         System.out.println();
     }
 
+    /**
+     * checkout a given branch.
+     * @param branchName
+     */
     public static void checkoutBranch(String branchName) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -201,6 +234,10 @@ public class Repository {
         Head.save(branchName);
     }
 
+    /**
+     * Checkout a file from current commit;
+     * @param filename
+     */
     public static void checkout(String filename) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -210,6 +247,11 @@ public class Repository {
         checkoutFile(commit, filename);
     }
 
+    /**
+     * Checkout a file from given commit;
+     * @param commitId
+     * @param filename
+     */
     public static void checkout(String commitId, String filename) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -223,6 +265,10 @@ public class Repository {
         checkoutFile(commit, filename);
     }
 
+    /**
+     * Create a new branch
+     * @param branchName
+     */
     public static void branch(String branchName) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -241,6 +287,10 @@ public class Repository {
         }
     }
 
+    /**
+     * Remove a branch
+     * @param branchName
+     */
     public static void rmBranch(String branchName) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -258,6 +308,10 @@ public class Repository {
         branch.delete();
     }
 
+    /**
+     * Checkout all the files tracked by the given commit and change the branch pointer to that commit.
+     * @param commitId
+     */
     public static void reset(String commitId) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -272,6 +326,10 @@ public class Repository {
         writeContents(Head.getInstance().getBranch(), commit.getHash());
     }
 
+    /**
+     * Merges files from the given branch into the current branch.
+     * @param branchName
+     */
     public static void merge(String branchName) {
         if (!inRepo()) {
             exitWithError("Not in an initialized Gitlet directory.");
@@ -302,6 +360,11 @@ public class Repository {
         mergeHelper(currentCommit, mergeCommit);
     }
 
+    /**
+     * Diff files in the current branch, current branch and the split point.
+     * @param currentCommit
+     * @param mergeCommit
+     */
     private static void mergeHelper(Commit currentCommit, Commit mergeCommit) {
         Commit splitPoint = Commit.findSplitPoint(currentCommit, mergeCommit);
         if (Commit.isSame(splitPoint, mergeCommit)) {
@@ -383,6 +446,12 @@ public class Repository {
         }
     }
 
+    /**
+     * Handle conflict files in merge process.
+     * @param filename
+     * @param headFile
+     * @param otherFile
+     */
     private static void conflictHelper(String filename, File headFile, File otherFile) {
         StringBuilder sb = new StringBuilder();
         sb.append("<<<<<<< HEAD\n");
@@ -408,6 +477,11 @@ public class Repository {
         }
     }
 
+    /**
+     * Checkout given filename from given commit.
+     * @param commit
+     * @param filename
+     */
     private static void checkoutFile(Commit commit, String filename) {
         TreeMap<String, Blob> blobs = commit.getBlobs();
         if (!blobs.containsKey(filename)) {
@@ -418,6 +492,10 @@ public class Repository {
         blob.copyToWorkingDir();
     }
 
+    /**
+     * Checkout all the files tracked by the given commit.
+     * @param commit
+     */
     private static void checkoutByCommit(Commit commit) {
         verifyUntrackedWillBeOverwritten(commit);
 
@@ -436,21 +514,9 @@ public class Repository {
         Stage.initStage();
     }
 
-    private static <T> void reverseArray(T[] arr) {
-        if (arr == null) {
-            return;
-        }
-
-        int length = arr.length;
-        T temp;
-
-        for (int i = 0; i < length / 2; i++) {
-            temp = arr[i];
-            arr[i] = arr[length - 1 - i];
-            arr[length - 1 - i] = temp;
-        }
-    }
-
+    /**
+     * Setup all directories when init the repository.
+     */
     private static void setup() {
         try {
             //create refs
@@ -471,24 +537,29 @@ public class Repository {
         }
     }
 
+    /**
+     * Verify whether the command is execute in the repository.
+     * @return
+     */
     private static boolean inRepo() {
         return GITLET_DIR.exists();
     }
 
-    private static File getFile(String name) {
-        File file = new File(CWD, name);
-        if (!file.exists()) {
-            exitWithError("File does not exist.");
-        }
-        return file;
-    }
-
+    /**
+     * Print iterable items line by line.
+     * @param items
+     * @param <E>
+     */
     private static <E> void printIterable(Iterable<E> items) {
         for (E item: items) {
             System.out.println(item.toString());
         }
     }
 
+    /**
+     * Verify whether untracked files will be overwritten.
+     * @param commit
+     */
     private static void verifyUntrackedWillBeOverwritten(Commit commit) {
         TreeMap<String, Blob> currentBlobs = Commit.getCurrentCommit().getBlobs();
         TreeMap<String, Blob> checkoutBlobs = commit.getBlobs();

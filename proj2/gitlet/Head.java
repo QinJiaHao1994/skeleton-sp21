@@ -7,8 +7,8 @@ import static gitlet.Repository.GITLET_DIR;
 import static gitlet.Repository.HEAD_DIR;
 
 /**
+ * Represents the Head pointer.
  * @author Jiahao Qin
- * @create 2021-04-18 2:12 下午
  */
 public class Head {
     private static Head instance;
@@ -20,16 +20,24 @@ public class Head {
         return instance;
     }
 
-    /** save new branch pointer to HEAD. */
+    /**
+     * Save new branch pointer to HEAD.
+     * @param branch
+     */
     public static void save(String branch) {
         writeContents(HEAD_DIR, "ref: refs/heads/" + branch);
         instance = null;
     }
 
+    /** The branch file of head pointer. */
     private File branch;
+    /** The branch name of head pointer. */
     private String branchName;
 
-    /** get pointer of HEAD, then advances the pointer. */
+    /**
+     * Get pointer of HEAD, then advances the pointer.
+     * @param hash
+     */
     public void advancePointer(String hash) {
         writeContents(branch, hash);
     }
@@ -47,7 +55,10 @@ public class Head {
         parse(content);
     }
 
-    /** parse content of HEAD which points to a branch reference. */
+    /**
+     * parse content of HEAD which points to a branch reference.
+     * @param content
+     */
     private void parse(String content) {
         String path = content.substring(5);
         String[] paths = path.split("/");

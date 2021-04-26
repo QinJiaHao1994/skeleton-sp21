@@ -12,6 +12,9 @@ import static gitlet.Repository.*;
 import static gitlet.Utils.*;
 import static gitlet.Utils.join;
 
+/**
+ * @author Jiahao Qin
+ */
 public class Commit implements Serializable {
 
     private static Commit currentCommit;

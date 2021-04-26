@@ -11,8 +11,8 @@ import static gitlet.Utils.*;
 import static gitlet.Utils.join;
 
 /**
+ * Represents the Stage area.
  * @author Jiahao Qin
- * @create 2021-04-18 3:51 下午
  */
 public class Stage implements Serializable {
     private static File stage = join(GITLET_DIR, "index");
@@ -25,6 +25,9 @@ public class Stage implements Serializable {
         return instance;
     }
 
+    /**
+     * Init stage area.
+     */
     public static void initStage() {
         try {
             stage.createNewFile();
@@ -42,6 +45,10 @@ public class Stage implements Serializable {
         removal = new TreeSet<>();
     }
 
+    /**
+     * Verify the stage area is empty.
+     * @return
+     */
     public Boolean isEmpty() {
         return staged.size() == 0 && removal.size() == 0;
     }
@@ -54,10 +61,17 @@ public class Stage implements Serializable {
         return removal;
     }
 
+    /**
+     * Save Stage object.
+     */
     public void save() {
         writeObject(stage, this);
     }
 
+    /**
+     * Add a file to stage for addition.
+     * @param name
+     */
     public void add(String name) {
         File file = new File(CWD, name);
         if (!file.exists()) {
@@ -79,6 +93,11 @@ public class Stage implements Serializable {
         save();
     }
 
+    /**
+     * Add a file to stage for removal, then remove the file
+     * in working directory if the file is tracked by current commit.
+     * @param name
+     */
     public void rm(String name) {
         File file = new File(CWD, name);
         Commit commit = Commit.getCurrentCommit();
