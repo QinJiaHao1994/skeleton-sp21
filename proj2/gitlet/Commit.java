@@ -159,7 +159,7 @@ public class Commit implements Serializable {
     /** Derives a new commit. */
     public void addCommit(String msg) {
         ArrayList<String> pIds = new ArrayList<>();
-        parentIds.add(currentCommit.getHash());
+        pIds.add(currentCommit.getHash());
         commitHelper(msg, pIds);
     }
 
